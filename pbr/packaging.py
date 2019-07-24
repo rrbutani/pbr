@@ -111,9 +111,9 @@ def get_reqs_from_files(requirements_files):
 def egg_fragment(match):
     return re.sub(r'(?P<PackageName>[\w.-]+)-'
                   '(?P<GlobalVersion>'
-                  '(?P<VersionTripple>'
-                  '(?P<Major>0|[1-9][0-9]*)\.'
-                  '(?P<Minor>0|[1-9][0-9]*)\.'
+                  '(?P<VersionTriple>'
+                  '((?P<Major>0|[1-9][0-9]*)\.)?'
+                  '((?P<Minor>0|[1-9][0-9]*)\.)?'
                   '(?P<Patch>0|[1-9][0-9]*)){1}'
                   '(?P<Tags>(?:\-'
                   '(?P<Prerelease>(?:(?=[0]{1}[0-9A-Za-z-]{0})(?:[0]{1})|'
