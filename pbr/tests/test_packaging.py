@@ -554,13 +554,30 @@ class ParseRequirementsTest(base.BaseTestCase):
 class ParseRequirementsTestScenarios(base.BaseTestCase):
 
     versioned_scenarios = [
-        ('non-versioned', {'versioned': False, 'expected': ['bar']}),
-        ('versioned', {'versioned': True, 'expected': ['bar>=1.2.3']})
+        ('non-versioned', {'versioned': False, 'expected': ['']}),
+        ('versioned', {'versioned': True, 'expected': ['>=1.2.3']}),
+        ('versioned-1', {'versioned_1': True, 'expected': ['>=1']}),
+        ('versioned-2', {'versioned_2': True, 'expected': ['>=10']}),
+        ('versioned-3', {'versioned_3': True, 'expected': ['>=10.2']}),
+        ('versioned-4', {'versioned_4': True, 'expected': ['>=10.30.1']}),
+        ('versioned-5', {'versioned_5': True, 'expected': ['>=10a1']}),
+        ('versioned-6', {'versioned_6': True, 'expected': ['>=10.30.0.1alpha_release']}),
+        ('versioned-7', {'versioned_7': True, 'expected': ['>=10alpha']}),
     ]
 
     subdirectory_scenarios = [
         ('non-subdirectory', {'has_subdirectory': False}),
         ('has-subdirectory', {'has_subdirectory': True})
+    ]
+
+    package_names = [
+        ('trailing-hyphen', {'name': 'foo-'}),
+        ('hyphenated', {'name': 'foo-bar'}),
+        ('triple', {'name': 'foo-bar-baz'}),
+        ('trailing-dot', {'name': 'foo-bar-baz-.'}),
+        ('leading-hyphen', {'name': '-9'}),
+        ('dots', {'name': 'foo-bar.baz-.9'}),
+        ('regular', {'name': 'foo'}),
     ]
 
     scenarios = [
@@ -572,33 +589,53 @@ class ParseRequirementsTestScenarios(base.BaseTestCase):
     ]
 
     scenarios = scenarios + testscenarios.multiply_scenarios([
-        ('ssh_egg_url', {'url': 'git+ssh://foo.com/zipball#egg=bar'}),
-        ('git_https_egg_url', {'url': 'git+https://foo.com/zipball#egg=bar'}),
-        ('http_egg_url', {'url': 'https://foo.com/zipball#egg=bar'}),
-    ], versioned_scenarios, subdirectory_scenarios)
+        ('ssh_egg_url', {'url': 'git+ssh://foo.com/zipball#egg'}),
+        ('git_https_egg_url', {'url': 'git+https://foo.com/zipball#egg'}),
+        ('http_egg_url', {'url': 'https://foo.com/zipball#egg'}),
+    ], versioned_scenarios, subdirectory_scenarios, package_names)
 
-    scenarios = scenarios + testscenarios.multiply_scenarios(
-        [
-            ('git_egg_url',
-                {'url': 'git://foo.com/zipball#egg=bar', 'name': 'bar'})
-        ], [
-            ('non-editable', {'editable': False}),
-            ('editable', {'editable': True}),
-        ],
-        versioned_scenarios, subdirectory_scenarios)
+    scenarios = scenarios + testscenarios.multiply_scenarios([
+        ('git_egg_url',{'url': 'git://foo.com/zipball#egg'}),
+    ], [
+        ('non-editable', {'editable': False}),
+        ('editable', {'editable': True}),
+    ], versioned_scenarios, subdirectory_scenarios, package_names)
 
     def test_parse_requirements(self):
         tmp_file = tempfile.NamedTemporaryFile()
         req_string = self.url
+
+        if hasattr(self, 'name') and self.name:
+            req_string = ("%s=%s" % (req_string, self.name))
         if hasattr(self, 'editable') and self.editable:
             req_string = ("-e %s" % req_string)
         if hasattr(self, 'versioned') and self.versioned:
             req_string = ("%s-1.2.3" % req_string)
+        if hasattr(self, 'versioned_1') and self.versioned_1:
+            req_string = ("%s-1" % req_string)
+        if hasattr(self, 'versioned_2') and self.versioned_2:
+            req_string = ("%s-10" % req_string)
+        if hasattr(self, 'versioned_3') and self.versioned_3:
+            req_string = ("%s-10.2" % req_string)
+        if hasattr(self, 'versioned_4') and self.versioned_4:
+            req_string = ("%s-10.30.1" % req_string)
+        if hasattr(self, 'versioned_5') and self.versioned_5:
+            req_string = ("%s-10a1" % req_string)
+        if hasattr(self, 'versioned_6') and self.versioned_6:
+            req_string = ("%s-10.30.0.1alpha_release" % req_string)
+        if hasattr(self, 'versioned_7') and self.versioned_7:
+            req_string = ("%s-10alpha" % req_string)
         if hasattr(self, 'has_subdirectory') and self.has_subdirectory:
             req_string = ("%s&subdirectory=baz" % req_string)
         with open(tmp_file.name, 'w') as fh:
             fh.write(req_string)
-        self.assertEqual(self.expected,
+
+        expected = self.expected
+
+        if hasattr(self, 'name') and self.name:
+            expected = [ ("%s%s" % (self.name, ex)) for ex in expected]
+
+        self.assertEqual(expected,
                          packaging.parse_requirements([tmp_file.name]))
 
 
